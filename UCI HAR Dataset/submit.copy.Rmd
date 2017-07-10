@@ -1,0 +1,106 @@
+---
+title: "Getting and Cleaning Data"
+author: "Daniel H"
+date: "September 15, 2016"
+output: 
+  html_document: 
+    theme: readable
+---
+
+####Load data and required packages
+
+
+```{r}
+library(tidyverse)
+library(stringr)
+
+setwd("C:/Users/Daniel/Documents/R/Code/Coursera/Getting and Cleaning Data/Project/UCI HAR Dataset")
+
+y_train <- read_table("train/y_train.txt", col_names = F)
+y_test <- read_table("test/y_test.txt", col_names = F)
+
+features <- read_table("features.txt", col_names = F) 
+activity_labels <- read_table("activity_labels.txt", col_names = F)
+
+subject_train <- read_table("train/subject_train.txt", col_names = F)
+subject_test <- read_table("test/subject_test.txt", col_names = F)
+
+X_train <- read_table("train/X_train.txt", col_names = F)
+X_test <- read_table("test/X_test.txt", col_names = F)
+```
+
+####Data cleaning
+
+```{r}
+######### train data #############
+
+# Assign names to columns in df 'activity_labels'
+colnames(activity_labels)<- c("X1","Activity")
+
+# rename column X1 -> 'subject'
+subject_train <- subject_train  %>% rename(subject= X1) 
+
+# bind the subject_train df with activity levels (X1) in the 'y_train' df.
+train  <- bind_cols(y_train, subject_train) 
+
+# add column with corresponding activity_labels to the 'train' df, Merge by X1.
+train <- left_join(train, activity_labels) 
+
+# assign names from the features df(column X1) to the 'X_train' df 
+colnames(X_train) <- features %>% select(1) %>% unlist()  
+
+# Combine y_train, activity labels, X_train + 
+# Remove the first column X1 from train2 df to avoid columnd duplication +
+# select columns containing means and std
+train.data <- bind_cols(train, X_train) %>%
+              select(-1) %>% 
+              select(matches('subject|Activity|std|mean|Mean'))
+
+############# test data ############
+
+# Assign names to columns in df 'activity_labels'
+colnames(activity_labels)<- c("X1","Activity")
+
+# rename column X1 -> 'subject'
+subject_test <- subject_test  %>% rename(subject= X1)
+
+# bind the subject_test df with activity levels (col. X1 in train df) in the 'y_test' df.
+test  <- bind_cols(y_test, subject_test)
+
+# add a column with corresponding activity_labels to the test df, Merge by X1.
+test <- left_join(test, activity_labels)
+
+# Assign names from the features df(column X1) to the 'X_test' df which contains
+colnames(X_test) <- features %>% select(1) %>% unlist()
+
+# Combine y_test, activity labels, X_test +
+# Remove the first column from test2 to avoid error "duplicate column name" msg. +
+# select columns that contains means and std
+test.data <- bind_cols(test,X_test) %>%
+             select(-1) %>%
+             select(matches('subject|Activity|std|mean|Mean'))
+
+# Combine Train data with Test data in a single df 'run_analysis1'.
+dat <- rbind(train.data,test.data)
+
+# Summarize the data
+run_analysis<- (dat %>%
+                        group_by(subject,Activity) %>%
+                        summarise_each(funs( mean)))
+
+# replace Features names with more descriptive variable names
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all(pattern = "^t", "time")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("^f", "frequency")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("Acc", "Accelerometer")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("Gyro", "Gyroscope")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("Mag", "Magnitude")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("BodyBody", "Body")
+
+# check some renamed columns
+names(run_analysis) %>% sample(20)
+
+# write .txt file
+write_tsv(run_analysis,"./run_analysis.txt")
+
+```
+

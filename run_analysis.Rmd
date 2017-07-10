@@ -1,0 +1,232 @@
+---
+title: "Getting and Cleaning Data"
+author: "Daniel H"
+date: "September 15, 2016"
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+    theme: readable
+---
+
+## Load data and required packages
+
+```{r, message=FALSE, warning=FALSE}
+
+# load  required packages
+library(tidyverse)
+library(stringr)
+
+# set directory
+setwd("C:/Users/Daniel/Documents/R/Code/Coursera/Getting and Cleaning Data/Project/UCI HAR Dataset")
+
+# read data into R
+y_train <- 
+  read_table("train/y_train.txt", col_names = F)
+y_test <- 
+  read_table("test/y_test.txt", col_names = F)
+features <- 
+  read_table("features.txt", col_names = F) 
+activity_labels <- 
+  read_table("activity_labels.txt", col_names = F)
+subject_train <-
+  read_table("train/subject_train.txt", col_names = F)
+subject_test <-
+  read_table("test/subject_test.txt", col_names = F)
+X_train <-
+  read_table("train/X_train.txt", col_names = F)
+X_test <-
+  read_table("test/X_test.txt", col_names = F)
+```
+
+## Analysis
+
+```{r, message=FALSE, warning=FALSE}
+#-----------------------------------  train data -----------------------------------
+
+# Assign names to the columns of the df 'activity_labels'
+colnames(activity_labels) <- c("X1","Activity")
+
+# rename column X1 to 'subject'
+subject <- 
+  subject_train  %>%
+  rename(subject= X1) 
+
+# bind the subject df with activity levels (X1 in train df) in the 'y_train df'.
+train  <- 
+  bind_cols(y_train, subject) 
+
+# add a column with corresponding activity_labels to the 'train' df
+train1 <-
+  left_join(train, activity_labels) 
+
+# assign names from the features df(column X1) to the 'X_train' df 
+colnames(X_train) <-
+  features %>%
+  pull(1)
+
+# combine y_train, activity labels, X_train
+train2 <- 
+  bind_cols(train1, X_train) 
+
+# remove the first column X1 from train2 df to avoid error 'duplicate column name'
+train3 <-
+  train2 %>%
+  select(-1) 
+
+# select columns that contains means and std
+train4 <- 
+  train3  %>%
+  select(matches('subject|Activity|std|mean|Mean')) 
+
+
+
+
+#----------------------------------  test data ------------------------------------
+
+# assign names to the columns of the df 'activity_labels'
+colnames(activity_labels) <-
+  c("X1","Activity")
+
+# rename column X1 to 'subject'
+subjecta <-
+  subject_test  %>%
+  rename(subject= X1)
+
+# bind the subjecta df with activity levels (X1 in train df) in the y_test df.
+test <-
+  bind_cols(y_test, subjecta)
+
+# add a column with corresponding activity_labels to the test df 
+test1 <- 
+  left_join(test, activity_labels)
+
+# assign names from the features df(column X1) to the 'X_test' df which contains
+colnames(X_test) <-
+  features %>% 
+  pull(1)
+
+# combine y_test, activity labels, X_test
+test2 <- 
+  bind_cols(test1,X_test)
+
+# remove the first column from test2 to avoid error "duplicate column name" msg.
+test3 <- 
+  test2 %>%
+  select(-1)
+
+# select columns that contains means and std
+test4 <- 
+  test3  %>%
+  select(matches('subject|Activity|std|mean|Mean'))
+
+
+#----------------  merge train and test data + summarize--------------------------
+
+# combine Train data with Test data in a single df 'run_analysis1'.
+run_analysis1 <- 
+  rbind(train4,test4)
+
+# summarize data
+run_analysis<- 
+  run_analysis1 %>%
+  group_by(subject,Activity) %>%
+  summarise_all(funs( mean))
+
+#---------------- clean up and write required table ----------------------
+
+
+# replace features names with more descriptive variable names
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("^t", "time")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("^f", "frequency")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("Acc", "Accelerometer")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("Gyro", "Gyroscope")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("Mag", "Magnitude")
+names(run_analysis) <- names(run_analysis) %>%  str_replace_all("BodyBody", "Body")
+
+names(run_analysis)
+
+
+# write table
+write.table(run_analysis,"./tidy_dataset.txt",
+            sep=" ", row.name=FALSE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
